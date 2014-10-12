@@ -1,12 +1,33 @@
 package com.happyhacker.ourmarket;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.happyhacker.ourmarket.util.SystemUiHider;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.StrictMode;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AdapterView;
@@ -50,50 +71,27 @@ public class OurMarketActivity extends Activity {
      */
     private SystemUiHider mSystemUiHider;
 
-    @Override
+    @SuppressLint("NewApi")
+	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy); 
 
         setContentView(R.layout.activity_our_market);
 
         final View controlsView = findViewById(R.id.fullscreen_content_controls);
         final View contentView = findViewById(R.id.fullscreen_content);
-
+        
+        // THIS WAS HERE WHEN I GOT HERE! PLS IGNORE
         // Set up an instance of SystemUiHider to control the system UI for
         // this activity.
         mSystemUiHider = SystemUiHider.getInstance(this, contentView, HIDER_FLAGS);
         mSystemUiHider.setup();
         mSystemUiHider.show();
         
-
-
-        // Upon interacting with UI controls, delay any scheduled hide()
-        // operations to prevent the jarring behavior of controls going away
-        // while interacting with the UI.
-        //findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
-        
-        final String[] stallStrings = {"Hudson's Hungarian Burgers", "Dave's Tasty Treats"};
-        final String[] stallDesc = {"Covent Garden \nStall 1", "Camden Town \nStall 2"};
-        
-        ListView stallList = (ListView) findViewById(R.id.stall_list);
-        
-        ListItem adapter = new
-                ListItem(this, stallStrings, stallDesc);
-        stallList.setAdapter(adapter);
-        stallList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                        @Override
-                        public void onItemClick(AdapterView<?> parent, View view,
-                                                int position, long id) {
-                            Toast.makeText(OurMarketActivity.this, "You Clicked at " +stallStrings[+ position], Toast.LENGTH_SHORT).show();
-                        }
-                    });
-    	
-    	/*ArrayAdapter<String> stallAdapter = new ArrayAdapter<String>(this,
-    	        android.R.layout.simple_list_item_1, stallStrings);
-    	ListView stall_list = (ListView) findViewById(R.id.stall_list);
-    	stall_list.setAdapter(stallAdapter);*/
-        
-        
+        new JSONLoader().execute("http://ourmarket.org.uk/api/market-vendors");
     }
 
     @Override
@@ -126,7 +124,7 @@ public class OurMarketActivity extends Activity {
     Runnable mHideRunnable = new Runnable() {
         @Override
         public void run() {
-            mSystemUiHider.hide();
+            
         }
     };
 
@@ -137,5 +135,89 @@ public class OurMarketActivity extends Activity {
     private void delayedHide(int delayMillis) {
         mHideHandler.removeCallbacks(mHideRunnable);
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
+    }
+    
+    
+    class JSONLoader extends AsyncTask<String, Void, String> {
+
+		@SuppressLint("NewApi")
+		@Override
+		protected String doInBackground(String... args){
+			JSONArray vendors = null;
+			try {
+				vendors = new JSONArray(getJSON(args[0]));
+				//Toast.makeText(OurMarketActivity.this, args[0], Toast.LENGTH_LONG).show();
+				final String[] stallStrings = new String[vendors.length()];
+				for(int i =0; i < vendors.length(); i++){
+		        	JSONObject jObj = vendors.getJSONObject(i);
+
+		        	stallStrings[i] = jObj.getString("stall_name");
+		        	
+		        }
+				final ListView stallList = (ListView) findViewById(R.id.stall_list);
+		        
+		        final ListItem adapter = new ListItem(OurMarketActivity.this, stallStrings, vendors, OurMarketActivity.this);
+		        
+		        runOnUiThread(new Runnable() {
+				     @Override
+				     public void run() {
+
+				    	 stallList.setAdapter(adapter);
+				    	 //Add some code to the list items to when you hit them it changes screen
+				         stallList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+				             @Override
+				             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				             	Intent intent = new Intent(OurMarketActivity.this, StallActivity.class);
+				             	//Code to pass some text to the next page. Should pass ID
+				                 try {
+								 	intent.putExtra("JSON", adapter.getJSON(position).toString());
+							 	} catch (JSONException e) {
+							 		// TODO Auto-generated catch block
+							 		e.printStackTrace();
+							 	}
+				                startActivity(intent);
+				             }
+					     });
+				         
+				         findViewById(R.id.loadingPanel).setVisibility(View.GONE);
+				    	 
+
+				    }
+				});
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			return null;
+		}
+		
+		String getJSON(String url){
+			StringBuilder builder = new StringBuilder();
+    	    HttpClient client = new DefaultHttpClient();
+    	    HttpGet httpGet = new HttpGet(url);
+    	    try {
+    	      HttpResponse response = client.execute(httpGet);
+    	      StatusLine statusLine = response.getStatusLine();
+    	      int statusCode = statusLine.getStatusCode();
+    	      if (statusCode == 200) {
+    	        HttpEntity entity = response.getEntity();
+    	        InputStream content = entity.getContent();
+    	        BufferedReader reader = new BufferedReader(new InputStreamReader(content));
+    	        String line;
+    	        while ((line = reader.readLine()) != null) {
+    	          builder.append(line);
+    	        }
+    	      } else {
+    	        //Log.e(ParseJSON.class.toString(), "Failed to \wnload file");
+    	      }
+    	    } catch (ClientProtocolException e) {
+    	      e.printStackTrace();
+    	    } catch (IOException e) {
+    	      e.printStackTrace();
+    	    }
+    	    return builder.toString();
+		}
+    	
     }
 }

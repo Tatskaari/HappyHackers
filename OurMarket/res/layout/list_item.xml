@@ -3,18 +3,42 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/list_item">
+    <TableRow>
+        <ImageView
+            android:id="@+id/image"
+            android:layout_width="80dp"
+            android:layout_height="65dp"
+            android:visibility="gone"/>
+         <RelativeLayout
+			    android:id="@+id/loadingPanel"
+			    android:layout_width="80dp"
+            	android:layout_height="65dp"
+			    android:gravity="left" >
+			
+			    <ProgressBar
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:indeterminate="true" />
+			</RelativeLayout>
 
-    <TableRow>
-        <TextView
-            android:id="@+id/title"
-            android:layout_width="wrap_content"
-            android:layout_height="15dp"
-            android:textStyle="bold"/>
+        <TableLayout 
+		    android:layout_width="match_parent"
+		    android:layout_height="match_parent"
+		    android:background="@color/list_item">
+		    <TableRow>
+		        <TextView
+		            android:id="@+id/title"
+		            android:layout_width="wrap_content"
+		            android:layout_height="15dp"
+		            android:textStyle="bold"/>
+		    </TableRow>
+		    <TableRow>
+		        <TextView
+		            android:id="@+id/content"
+		            android:layout_width="wrap_content"
+		            android:layout_height="50dp" />
+			</TableRow>
+    	</TableLayout>
     </TableRow>
-    <TableRow>
-        <TextView
-            android:id="@+id/content"
-            android:layout_width="wrap_content"
-            android:layout_height="50dp" />
-	</TableRow>
+    
 </TableLayout>

@@ -2,22 +2,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0099cc"
+    android:background="@color/background"
     tools:context="com.happyhacker.ourmarket.OurMarketActivity" >
-
-    <!--
-         The primary full-screen view. This can be replaced with whatever view
-         is needed to present your content, e.g. VideoView, SurfaceView,
-         TextureView, etc.
-    -->
-
     
-
-    <!--
-         This FrameLayout insets its children based on system windows using
-         android:fitsSystemWindows.
-    -->
-
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="397dp"
@@ -27,6 +14,17 @@
 	        android:layout_width="match_parent"
 	        android:layout_height="match_parent"
 	        android:orientation="vertical">
+	        <RelativeLayout
+			    android:id="@+id/loadingPanel"
+			    android:layout_width="match_parent"
+			    android:layout_height="match_parent"
+			    android:gravity="center" >
+			
+			    <ProgressBar
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:indeterminate="true" />
+			</RelativeLayout>
 			<ListView
        			android:id="@+id/stall_list"
        			android:layout_width="match_parent"
